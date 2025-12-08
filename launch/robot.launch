@@ -1,0 +1,17 @@
+<launch>
+  <!--
+    Launch wrapper for `r1_launch.py` script.
+    Usage:
+      roslaunch predictive_risk_aware_dt r1_launch.launch launchfile:=/path/to/your/launchfile.launch
+  -->
+
+  <arg name="launchfile" default="$(find pa_cbf)/launch/robot_assests.launch" />
+
+  
+
+  <node pkg="pa_cbf" type="r1_launch.py" name="r1_launch" output="screen">
+    <!-- pass the launchfile path as the node's private parameter ~launchfile -->
+    <param name="launchfile" value="$(arg launchfile)" />
+  </node>
+
+</launch>

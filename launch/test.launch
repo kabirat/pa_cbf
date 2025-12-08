@@ -1,0 +1,22 @@
+<launch>
+    <!--
+        Launch wrapper for:
+        1. Launching the robot.
+        2. Running the `test_model.py` script.
+        Usage:
+        roslaunch pa_cbf test.launch
+    -->
+
+    <!-- Loads the robot launch file -->
+    <include file="$(find pa_cbf)/launch/robot.launch">
+        <arg name="launchfile" default="$(find pa_cbf)/launch/robot_assests.launch" />
+    </include>
+    
+    <!-- Runs the test model script -->
+    <node pkg="pa_cbf" type="test_model.py" name="test_model" output="screen">
+    </node>
+
+    <!-- Runs the realtime plot script -->
+    <node pkg="pa_cbf" type="realtime_plot.py" name="realtime_plot" output="screen">
+    </node>
+</launch>

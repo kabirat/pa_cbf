@@ -1,0 +1,17 @@
+<launch>
+<arg name="gui" value="false"/>
+<param name="use_sim_time" value="true"/>
+
+   <!-- Gazebo  -->
+  <include file="/home/mien-group/catkin_ws/src/pa_cbf/catkin_ws/src/multi_robot_scenario/launch/empty_world.launch" />
+
+  <!-- Robot with diff drive -->
+  <include file="/home/mien-group/catkin_ws/src/pa_cbf/catkin_ws/src/multi_robot_scenario/launch/pioneer3dx.gazebo.launch">
+     <arg name="robot_name" value="r1" />
+     <arg name="robot_position" value="-x 0.0 -y 0.0 -z 0.01 -R 0 -P 0 -Y +0.0" />
+   </include>
+
+
+  <!-- RVIZ -->
+  <!-- <node pkg="rviz" type="rviz" name="rviz" args="/home/mien-group/catkin_ws/src/pa_cbf/catkin_ws/src/multi_robot_scenario/launch/pioneer3dx.rviz" /> -->
+</launch>

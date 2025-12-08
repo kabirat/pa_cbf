@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/mien-group/catkin_ws/src/pa_cbf/catkin_ws/install_isolated/setup.sh

@@ -1,0 +1,22 @@
+<launch>
+    <!--
+        Launch wrapper for:
+        1. Launching the robot.
+        2. Running the `train_models.py` script.
+        Usage:
+        roslaunch pa_cbf train.launch select_env:=<environment_type>
+        e.g., roslaunch pa_cbf train.launch select_env:=predictive
+        where <environment_type> is one of "instantaneous", "predictive", or "cbf_qp".
+    -->
+
+    <!-- Loads the robot launch file -->
+    <include file="$(find pa_cbf)/launch/robot.launch">
+        <arg name="launchfile" default="$(find pa_cbf)/launch/robot_assests.launch" />
+    </include>
+    
+    <!-- Runs the train models script -->
+    <node pkg="pa_cbf" type="train_models.py" name="train_models" output="screen">
+    <param name="select_env" value="instantaneous" />  <!-- options: "instantaneous", "predictive", "cbf_qp" -->
+    </node>
+   
+</launch>

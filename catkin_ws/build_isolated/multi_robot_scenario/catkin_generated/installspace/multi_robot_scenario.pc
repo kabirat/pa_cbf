@@ -1,0 +1,8 @@
+prefix=/home/mien-group/catkin_ws/src/pa_cbf/catkin_ws/install_isolated
+
+Name: multi_robot_scenario
+Description: Description of multi_robot_scenario
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
