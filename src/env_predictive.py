@@ -312,7 +312,7 @@ class RobotEnv:
                 b.append(b_coef)
 
                 # prepare for next step
-                alpha, beta_ = alpha_next, beta_
+                alpha, beta_ = alpha_next, beta_next
 
         # If we got no forward beams (should not happen), just pass through
         if len(A) == 0:
