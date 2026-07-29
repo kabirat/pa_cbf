@@ -25,7 +25,7 @@ from math import inf
 
 
 GOAL_REACHED_DIST = 0.3
-COLLISION_DIST = 0.35
+COLLISION_DIST = 0.3
 TIME_DELTA = 0.1
 
 WALKER_SPEED = 0.2  # m/s, adjust as you like
@@ -145,7 +145,7 @@ class RobotEnv:
         self.last_odom = None
 
         # --- CBF parameters ---
-        self.cbf_d_min = 0.45   # safety distance [m] (must be > COLLISION_DIST)
+        self.cbf_d_min = 0.3   # safety distance [m] (must be > COLLISION_DIST)
         self.cbf_gamma = 1.0   # how aggressively to slow down near obstacles
                 # --- CBF / PA-CBF extra config ---
         self.cbf_front_angle = math.pi         # +/- 90deg sector in front
@@ -155,7 +155,7 @@ class RobotEnv:
         # history for range-rate estimation
         self.cbf_prev_ranges = None            # previous velodyne_data
         self.cbf_rate_history = None           # list of deques, one per beam
-
+        self.cbf_prev_v = None              # Store the speed applied during the previous interval
         self.cbf_horizon = 3          # H: number of steps into the future
         self.cbf_gamma_pred = 1.0     # predictive CBF gain (can reuse cbf_gamma)
         self.cbf_dt = TIME_DELTA      # prediction time step (same as control step)
@@ -246,20 +246,25 @@ class RobotEnv:
         # ----- 1) Range-rate estimation -----
         dt = TIME_DELTA  # your env uses a fixed propagation step
         raw_rate = (rho - self.cbf_prev_ranges) / dt
+        betas = self._sector_centers()
+
+        if not hasattr(self, "cbf_prev_v") or self.cbf_prev_v is None:
+            v_prev = v_nom  # initialize previous speed if not set
+        else:
+            v_prev = self.cbf_prev_v
+        w_hat = raw_rate + v_prev * np.cos(betas)
 
         # update histories
         for j in range(n_beams):
-            self.cbf_rate_history[j].append(raw_rate[j])
+            self.cbf_rate_history[j].append(w_hat[j])
 
         # robust rate: rho_dot_rob = raw - k_sigma * sigma(history)
+        
         robust_rate = np.zeros(n_beams)
         for j in range(n_beams):
             hist = np.array(self.cbf_rate_history[j])
-            if len(hist) > 1:
-                sigma = np.std(hist)
-            else:
-                sigma = 0.0
-            robust_rate[j] = raw_rate[j] - self.cbf_k_sigma * sigma
+            sigma = np.std(hist) if len(hist) > 1 else 0.0
+            robust_rate[j] = w_hat[j] - self.cbf_k_sigma * sigma
 
         self.debug_log["t"].append(rospy.get_time())
         self.debug_log["raw_rate"].append(raw_rate.copy())        # or raw_rate[j]
@@ -295,11 +300,16 @@ class RobotEnv:
             alpha = 0.0
             beta_ = h0
 
+            epsilon_j = np.zeros(H + 1)  # robustness margin for each step
+            epsilon_step = 0.01 # [m] margin per step, can be tuned
+            for ell_eps in range(H + 1):
+                epsilon_j[ell_eps] = ell_eps * epsilon_step
+
             for ell in range(H):
                 # propagate barrier one step forward:
                 # h_{ℓ+1} = h_{ℓ} + dt * (-v * c + rho_dot_rob)
                 alpha_next = alpha - dt * c
-                beta_next  = beta_ + dt * rho_dot_rob
+                beta_next  = beta_ + dt * rho_dot_rob - (epsilon_j[ell + 1] - epsilon_j[ell])  
 
                 gamma_l = self.cbf_gamma_pred  # could vary with ell if you like
 
@@ -343,9 +353,11 @@ class RobotEnv:
 
         if res.info.status_val not in (1, 2):  # not solved
             # fall back to nominal control
-            return [v_nom, w_nom]
+            r#eturn [v_nom, w_nom]
+            return [v_min, np.clip(w_nom, w_min, w_max)]
 
         v_star, w_star = res.x[0], res.x[1]
+        self.cbf_prev_v = float(v_star)
         return [float(v_star), float(w_star)]
 
     def update_walkers(self, dt):
@@ -542,6 +554,10 @@ class RobotEnv:
             WALKER_SPEED = 0.3
         if episode >= 2000:
             WALKER_SPEED = 0.35
+
+        self.cbf_prev_ranges = None
+        self.cbf_rate_history = None
+        self.cbf_prev_v = None
         
         # Resets the state of the environment and returns an initial observation.
         rospy.wait_for_service("/gazebo/reset_world")
